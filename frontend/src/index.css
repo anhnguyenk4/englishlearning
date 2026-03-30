@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Nền + chữ cho app giống phong cách Duolingo */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-white text-slate-900;
+  font-family: theme('fontFamily.display');
+}
+
+html.dark body {
+  @apply bg-slate-950 text-white;
+}
+

@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonType {
+  VOCABULARY
+  GRAMMAR
+  LISTENING
+  READING
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  FILL_BLANK
+  LISTENING
+  WRITING
+  RANDOM
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  role       Role     @default(USER)
+  name       String?
+  avatar     String?
+  level      Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  enrollments  Enrollment[]
+  progress     Progress[]
+  results      Result[]
+  userBadges   UserBadge[]
+  leaderboard  Leaderboard?
+
+  @@map("users")
+}
+
+model Course {
+  id          Int           @id @default(autoincrement())
+  title       String
+  description String
+  level       CourseLevel
+  duration    Int
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  lessons      Lesson[]
+  enrollments  Enrollment[]
+
+  @@map("courses")
+}
+
+model Lesson {
+  id          Int        @id @default(autoincrement())
+  courseId    Int        @map("course_id")
+  title      String
+  type       LessonType
+  // Nội dung bài học:
+  // - VOCABULARY/GRAMMAR/READING: text/markdown
+  // - LISTENING: URL audio (MVP)
+  content    String
+  orderIndex Int        @map("order_index")
+
+  course   Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions Question[]
+  progress  Progress[]
+  results   Result[]
+
+  @@index([courseId])
+  @@map("lessons")
+}
+
+model Enrollment {
+  id        Int @id @default(autoincrement())
+  userId    Int @map("user_id")
+  courseId  Int @map("course_id")
+  // phần trăm hoàn thành khóa học (0..100)
+  progress  Int @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Question {
+  id            Int          @id @default(autoincrement())
+  lessonId      Int          @map("lesson_id")
+  type         QuestionType
+  question     String
+  // options chỉ dùng cho MULTIPLE_CHOICE (Json mảng chuỗi)
+  options      Json?
+  correctAnswer String      @map("correct_answer")
+  orderIndex   Int         @map("order_index")
+
+  lesson  Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@map("questions")
+}
+
+model Result {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  lessonId  Int      @map("lesson_id")
+  score     Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([lessonId])
+  @@map("results")
+}
+
+model Progress {
+  id          Int @id @default(autoincrement())
+  userId      Int         @map("user_id")
+  lessonId    Int         @map("lesson_id")
+  status      ProgressStatus @default(NOT_STARTED)
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  completedAt DateTime?  @map("completed_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([lessonId])
+  @@map("progress")
+}
+
+model Badge {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  // condition JSON ví dụ: { "type":"COMPLETED_LESSONS", "min": 1 }
+  condition Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id       Int @id @default(autoincrement())
+  userId   Int       @map("user_id")
+  badgeId  Int       @map("badge_id")
+  awardedAt DateTime @default(now()) @map("awarded_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@map("user_badges")
+}
+
+model Leaderboard {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  score     Int      @default(0)
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("leaderboard")
+}
+

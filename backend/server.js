@@ -1,18 +1,9 @@
-const express = require('express');
-const app = express();
+require('dotenv').config()
 
-app.use(express.json());
+const app = require('./src/app')
 
-app.get('/', (req, res) => {
-  res.send('Hello from English Learning Backend!');
-});
+const PORT = process.env.PORT || 3000
 
-// Example API endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Backend is running' });
-});
-
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+  console.log(`NEDU backend listening on port ${PORT}`)
+})

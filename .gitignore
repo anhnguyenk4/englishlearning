@@ -1,0 +1,18 @@
+# Logs
+*.log
+
+# Node dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build outputs
+frontend/dist/
+
+# Env files
+.env
+.env.*
+
+# Uploads (MVP)
+backend/uploads/
+
